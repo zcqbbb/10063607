@@ -1,0 +1,47 @@
+----------------------------------------------------------------------------------------
+# preparatory work
+----------------------------------------------------------------------------------------
+# network Traditional naming
+
+cd /etc/sysconfig/network-scripts/
+cp ifcfg-ens33 ifcfg-ens33.bak
+mv ifcfg-ens33 ifcfg-eth0
+cat > ifcfg-eth0 <<EOF
+TYPE=Ethernet
+BOOTPROTO=static
+NAME=eth0
+DEVICE=eth0
+ONBOOT=yes
+
+IPADDR=192.168.8.168
+NETMASK=255.255.255.0
+GATEWAY=192.168.8.168
+DNS1=192.168.8.2
+DNS2=8.8.8.8
+DNS3=114.114.114.114
+EOF
+
+sed -ri 's/(.*rd.lvm.lv=centos\/swap)( rhgb.*)/\1 net.ifnames=0 biosdevname=0\2/g' /etc/default/grub
+grub2-mkconfig -o /etc/grub2.cfg
+reboot
+
+# stop firewalld and selinux
+
+systemctl disable --now firewalld
+sed -ri 's/^(SELINUX=).*/\1disabled/g' /etc/selinux/config
+reboot
+
+# config source
+
+mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
+sed -i -e '/mirrors.cloud.aliyuncs.com/d' -e '/mirrors.aliyuncs.com/d' /etc/yum.repos.d/CentOS-Base.repo
+
+curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
+
+yum clean all
+yum makecache
+yum repolist
+----------------------------------------------------------------------------------------
+# The above IP needs to be modified
+----------------------------------------------------------------------------------------
